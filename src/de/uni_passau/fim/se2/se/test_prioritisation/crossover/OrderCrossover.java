@@ -40,11 +40,9 @@ public class OrderCrossover implements Crossover<TestOrder> {
     int[] childOrder = new int[numTests];
     Arrays.fill(childOrder, -1); // initialize with empty slots
 
-    Random rng = new Random(); // or pass a Random instance to the constructor
-
     // Randomly select two crossover points
-    int index1 = rng.nextInt(numTests);
-    int index2 = rng.nextInt(numTests);
+    int index1 = random.nextInt(numTests);
+    int index2 = random.nextInt(numTests);
     int crossoverStart = Math.min(index1, index2);
     int crossoverEnd = Math.max(index1, index2);
 
