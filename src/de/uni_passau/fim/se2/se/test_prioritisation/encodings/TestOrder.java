@@ -23,7 +23,12 @@ public class TestOrder extends Encoding<TestOrder> {
      */
     public TestOrder(Mutation<TestOrder> mutation, int[] positions) {
         super(mutation);
-        throw new UnsupportedOperationException("Implement me");
+            
+    this.positions = positions.clone();
+
+    if (!isValid(this.positions)) {
+        throw new IllegalArgumentException("Invalid test order encoding.");
+    }
     }
 
     /**
