@@ -50,7 +50,7 @@ public class Utils {
      * @return degrees of freedom
      */
     public static int degreesOfFreedom(final int testCases) {
-        throw new UnsupportedOperationException("Implement me");
+        return Math.max(0,testCases-1);
     }
 
     /**
