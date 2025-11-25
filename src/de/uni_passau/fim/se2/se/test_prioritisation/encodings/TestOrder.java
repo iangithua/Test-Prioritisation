@@ -35,7 +35,15 @@ public class TestOrder extends Encoding<TestOrder> {
      * @return {@code true} if the given prioritization is valid, {@code false} otherwise
      */
     public static boolean isValid(final int[] tests) {
-        throw new UnsupportedOperationException("Implement me");
+            int n = tests.length;
+            boolean[] seen = new boolean[n];
+            for (int v : tests) {
+                if (v < 0 || v >= n) return false;
+                if (seen[v]) return false;
+                seen[v] = true;
+            }
+            for (boolean b : seen) if (!b) return false;
+            return true;
     }
 
     /**
@@ -43,7 +51,7 @@ public class TestOrder extends Encoding<TestOrder> {
      */
     @Override
     public TestOrder deepCopy() {
-        throw new UnsupportedOperationException("Implement me");
+        return new TestOrder(getMutation(),positions.clone());
     }
 
     /**
