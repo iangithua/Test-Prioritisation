@@ -65,7 +65,7 @@ public class TournamentSelection implements ParentSelection<TestOrder> {
         for(int i = 0; i < tournamentSize; i++) {
             // Randomly select an individual from the population
             TestOrder individual = population.get(random.nextInt(population.size()));
-            double fitness = fitnessFunction.applyAsDouble(individual);
+            double fitness = fitnessFunction.maximise(individual);
 
             // Update the best individual if the current one is better
             if (fitness > bestFitness) {
