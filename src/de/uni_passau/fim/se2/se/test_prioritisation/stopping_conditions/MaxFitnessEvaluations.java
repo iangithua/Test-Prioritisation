@@ -5,27 +5,39 @@ package de.uni_passau.fim.se2.se.test_prioritisation.stopping_conditions;
  */
 public class MaxFitnessEvaluations implements StoppingCondition {
 
+    private final int maxFitnessEvaluations;
+
+     //Counter for how many evaluations have been performed so far.
+    private int currentEvaluations;
+
     public MaxFitnessEvaluations(final int maxFitnessEvaluations) {
-        throw new UnsupportedOperationException("Implement me");
+        this.maxFitnessEvaluations = maxFitnessEvaluations;
     }
 
     @Override
     public void notifySearchStarted() {
-        throw new UnsupportedOperationException("Implement me");
+        // Reset the counter when search begins
+        this.currentEvaluations = 0;
     }
 
     @Override
     public void notifyFitnessEvaluation() {
-        throw new UnsupportedOperationException("Implement me");
+        // Increment the counter every time fitness is evaluated
+        this.currentEvaluations++;
     }
 
     @Override
     public boolean searchMustStop() {
-        throw new UnsupportedOperationException("Implement me");
+        // Stop when the limit is reached
+        return this.currentEvaluations >= this.maxFitnessEvaluations;
     }
 
     @Override
     public double getProgress() {
-        throw new UnsupportedOperationException("Implement me");
+        // A value between 0.0 and 1.0 that indicates progress toward the stopping limit
+        if (maxFitnessEvaluations == 0) {
+            return 1.0;
+        }
+        return Math.min(1.0, (double) this.currentEvaluations / this.maxFitnessEvaluations);
     }
 }
