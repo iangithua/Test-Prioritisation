@@ -14,11 +14,18 @@ import de.uni_passau.fim.se2.se.test_prioritisation.stopping_conditions.Stopping
  */
 public final class RandomSearch<E extends Encoding<E>> implements SearchAlgorithm<E> {
 
+    private final StoppingCondition stoppingCondition;
+    private final EncodingGenerator<E> encodingGenerator;
+    private final FitnessFunction<E> fitnessFunction;
+
     public RandomSearch(
             final StoppingCondition stoppingCondition,
             final EncodingGenerator<E> encodingGenerator,
             final FitnessFunction<E> fitnessFunction) {
-        throw new UnsupportedOperationException("Implement me");
+        
+            this.stoppingCondition = stoppingCondition;
+            this.encodingGenerator = encodingGenerator;
+            this.fitnessFunction = fitnessFunction;
     }
 
     /**
@@ -28,11 +35,32 @@ public final class RandomSearch<E extends Encoding<E>> implements SearchAlgorith
      */
     @Override
     public E findSolution() {
-        throw new UnsupportedOperationException("Implement me");
+
+        stoppingCondition.notifySearchStarted();
+        E bestSolution = null;
+        double bestFitness = Double.NEGATIVE_INFINITY;
+
+        while (!stoppingCondition.searchMustStop()) {
+            // 1. Generate a random candidate solution
+            E candidateSolution = encodingGenerator.get();
+
+            // 2. Evaluate its fitness
+            double candidateFitness = fitnessFunction.applyAsDouble(candidateSolution);
+
+            // 3. Notify that a fitness evaluation occurred
+            stoppingCondition.notifyFitnessEvaluation();
+
+
+            if (candidateFitness > bestFitness) {
+                bestFitness = candidateFitness;
+                bestSolution = candidateSolution;
+            }
+        }
+     return bestSolution;
     }
 
     @Override
     public StoppingCondition getStoppingCondition() {
-        throw new UnsupportedOperationException("Implement me");
+        return stoppingCondition;
     }
 }
