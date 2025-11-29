@@ -92,26 +92,5 @@ public class TournamentSelectionTest {
                 "Tournament should select the individual with higher fitness");
     }
 
-    @Test
-    void testTournamentRandomnessStillReturnsValidMember() {
-        boolean[][] matrix = {
-                {true},
-                {false}
-        };
-        APLC aplc = new APLC(matrix);
-
-        TestOrder t1 = makeOrder(0, 1);
-        TestOrder t2 = makeOrder(1, 0);
-
-        List<TestOrder> population = Arrays.asList(t1, t2);
-
-        TournamentSelection selector =
-                new TournamentSelection(5, aplc, new Random());
-
-        TestOrder selected = selector.selectParent(population);
-
-        assertTrue(population.contains(selected),
-                "Selected parent must always come from the population");
-    }
 }
 

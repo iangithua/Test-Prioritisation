@@ -55,6 +55,9 @@ public class TournamentSelection implements ParentSelection<TestOrder> {
         //Check if populationn is not null
         if(population == null || population.isEmpty())
             throw new IllegalArgumentException("Population must not be null or empty");
+        if (tournamentSize > population.size()) 
+            throw new IllegalArgumentException("Tournament size (" + tournamentSize + ") cannot be larger than population size (" + population.size() + ")");
+        
 
         TestOrder bestIndividual = null;
         double bestFitness = Double.NEGATIVE_INFINITY;
