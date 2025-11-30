@@ -14,94 +14,113 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SimulatedAnnealingTest {
 
-    // Generates a simple TestOrder instance for the search process
-    static class MockOrderGenerator implements EncodingGenerator<TestOrder> {
+    // Provides a deterministic TestOrder instance for SA to operate on.
+    static class TestOrderGenerator implements EncodingGenerator<TestOrder> {
         @Override
         public TestOrder get() {
-            int[] defaultOrder = {0, 1, 2, 3, 4};
-            return new TestOrder(new ShiftToBeginningMutation(new Random()), defaultOrder);
+            int[] initial = {0, 1, 2, 3, 4};  // simple sequence for testing
+            return new TestOrder(new ShiftToBeginningMutation(new Random()), initial);
         }
     }
 
-    // Basic energy evaluator used to measure solution "quality"
-    static class MockEnergyEvaluator implements FitnessFunction<TestOrder> {
+    // Very simple energy function: total sum of positions is the energy.
+    static class TestEnergyFunction implements FitnessFunction<TestOrder> {
         @Override
-        public double applyAsDouble(TestOrder candidate) {
-            int total = 0;
-            for (int element : candidate.getPositions()) {
-                total += element;
-            }
-            return total; // Larger sums = higher energy = worse
+        public double applyAsDouble(TestOrder encoding) {
+            int sum = 0;
+            for (int v : encoding.getPositions()) sum += v;
+            return sum;
         }
 
         @Override
-        public double maximise(TestOrder candidate) {
-            return applyAsDouble(candidate);
+        public double maximise(TestOrder encoding) {
+            return applyAsDouble(encoding);
         }
 
         @Override
-        public double minimise(TestOrder candidate) {
-            return -applyAsDouble(candidate);
+        public double minimise(TestOrder encoding) {
+            return -applyAsDouble(encoding); // lower = better
         }
     }
 
-    // Simple condition that limits the number of evaluations
-    static class MockStopCondition implements StoppingCondition {
-        private int evalCount = 0;
-        private final int limit;
+    // Tracks how many evaluations have been performed.
+    static class TestStoppingCondition implements StoppingCondition {
+        private int evaluations = 0;
+        private final int maxEvaluations;
 
-        public MockStopCondition(int limit) {
-            this.limit = limit;
+        public TestStoppingCondition(int maxEvaluations) {
+            this.maxEvaluations = maxEvaluations;
         }
 
         @Override
         public void notifySearchStarted() {
-            evalCount = 0;
+            evaluations = 0;
         }
 
         @Override
         public void notifyFitnessEvaluation() {
-            evalCount++;
+            evaluations++;
         }
 
         @Override
         public boolean searchMustStop() {
-            return evalCount >= limit;
+            return evaluations >= maxEvaluations;
         }
 
         @Override
         public double getProgress() {
-            return (double) evalCount / limit;
+            return (double) evaluations / maxEvaluations;
         }
     }
 
+
     @Test
     void testFindSolution() {
-        int maxSteps = 10;
-
-        MockStopCondition condition = new MockStopCondition(maxSteps);
-        MockOrderGenerator generator = new MockOrderGenerator();
-        MockEnergyEvaluator evaluator = new MockEnergyEvaluator();
-        Random rng = new Random();
+        TestStoppingCondition stop = new TestStoppingCondition(10);
+        TestOrderGenerator generator = new TestOrderGenerator();
+        TestEnergyFunction energy = new TestEnergyFunction();
 
         SimulatedAnnealing<TestOrder> sa = new SimulatedAnnealing<>(
-                condition, generator, evaluator, 1, rng);
+                stop, generator, energy, 1, new Random()
+        );
 
         TestOrder result = sa.findSolution();
 
-        assertNotNull(result, "Returned solution should not be null.");
-        assertTrue(result.size() > 0, "Returned solution must not be empty.");
+        assertNotNull(result, "SA must return a valid solution.");
+        assertTrue(result.size() > 0, "Solution must contain at least one element.");
     }
 
     @Test
-    void testWorseSolutionIsAccepted() {
-        int stepLimit = 1;
-        MockStopCondition condition = new MockStopCondition(stepLimit);
-        MockOrderGenerator generator = new MockOrderGenerator();
-        MockEnergyEvaluator evaluator = new MockEnergyEvaluator();
+    void testConstructorWithNullArguments() {
+        TestOrderGenerator generator = new TestOrderGenerator();
+        TestEnergyFunction energy = new TestEnergyFunction();
+        Random rand = new Random();
 
-        // RNG always returns 0 → ensures SA accepts worse moves
-        Random forcedAcceptRng = new Random() {
+        assertThrows(NullPointerException.class,
+                () -> new SimulatedAnnealing<>(null, generator, energy, 1, rand),
+                "StoppingCondition cannot be null.");
+
+        assertThrows(NullPointerException.class,
+                () -> new SimulatedAnnealing<>(new TestStoppingCondition(10), null, energy, 1, rand),
+                "EncodingGenerator cannot be null.");
+
+        assertThrows(NullPointerException.class,
+                () -> new SimulatedAnnealing<>(new TestStoppingCondition(10), generator, null, 1, rand),
+                "FitnessFunction cannot be null.");
+
+        assertThrows(NullPointerException.class,
+                () -> new SimulatedAnnealing<>(new TestStoppingCondition(10), generator, energy, 1, null),
+                "Random cannot be null.");
+    }
+
+    @Test
+    void testAcceptWorseSolution() {
+        TestStoppingCondition stop = new TestStoppingCondition(1);
+        TestOrderGenerator generator = new TestOrderGenerator();
+        TestEnergyFunction energy = new TestEnergyFunction();
+
+        // Always accepts worse solutions
+        Random forcedAccept = new Random() {
             @Override
             public double nextDouble() {
                 return 0.0;
@@ -109,22 +128,21 @@ class SimulatedAnnealingTest {
         };
 
         SimulatedAnnealing<TestOrder> sa = new SimulatedAnnealing<>(
-                condition, generator, evaluator, 1, forcedAcceptRng);
+                stop, generator, energy, 1, forcedAccept
+        );
 
-        TestOrder outcome = sa.findSolution();
-
-        assertNotNull(outcome);
+        TestOrder result = sa.findSolution();
+        assertNotNull(result, "SA must still produce a solution.");
     }
 
     @Test
-    void testNoImprovementScenario() {
-        int stepLimit = 1;
-        MockStopCondition condition = new MockStopCondition(stepLimit);
-        MockOrderGenerator generator = new MockOrderGenerator();
-        MockEnergyEvaluator evaluator = new MockEnergyEvaluator();
+    void testNoImprovement() {
+        TestStoppingCondition stop = new TestStoppingCondition(1);
+        TestOrderGenerator generator = new TestOrderGenerator();
+        TestEnergyFunction energy = new TestEnergyFunction();
 
-        // RNG always returns 1 → ensures SA never accepts worse moves
-        Random forcedRejectRng = new Random() {
+        // Never accepts worse solutions
+        Random forcedReject = new Random() {
             @Override
             public double nextDouble() {
                 return 1.0;
@@ -132,10 +150,10 @@ class SimulatedAnnealingTest {
         };
 
         SimulatedAnnealing<TestOrder> sa = new SimulatedAnnealing<>(
-                condition, generator, evaluator, 1, forcedRejectRng);
+                stop, generator, energy, 1, forcedReject
+        );
 
-        TestOrder outcome = sa.findSolution();
-
-        assertNotNull(outcome);
+        TestOrder result = sa.findSolution();
+        assertNotNull(result, "Even without improvement, SA must return a valid solution.");
     }
 }
