@@ -40,6 +40,13 @@ public final class SimulatedAnnealing<E extends Encoding<E>> implements SearchAl
     private final FitnessFunction<E> energy;
     private final int degreesOfFreedom;
     private final Random random;
+    public E currentSolution;
+    public E bestSolution;
+    public double bestEnergy;  // Track the best observed energy value
+
+    public double temperature;
+    private final double coolingRate;  // Rate at which temperature decreases
+    private final double initialAcceptanceProbability;  // Initial acceptance probability for worse solutions
 
     public SimulatedAnnealing(
             final StoppingCondition stoppingCondition,
@@ -52,6 +59,11 @@ public final class SimulatedAnnealing<E extends Encoding<E>> implements SearchAl
         this.energy = Objects.requireNonNull(energy);
         this.degreesOfFreedom = degreesOfFreedom;
         this.random = Objects.requireNonNull(random);
+
+        // Set initial temperature and cooling rate
+        this.temperature = 1.0; // Initial temperature
+        this.coolingRate = 0.99;  // Rate at which the temperature decreases, typically between 0.8-1.0
+        this.initialAcceptanceProbability = 0.5;  // Initial probability to accept worse solutions
     }
 
     /**
@@ -63,41 +75,41 @@ public final class SimulatedAnnealing<E extends Encoding<E>> implements SearchAl
         stoppingCondition.notifySearchStarted();
 
         // Initial solution
-        E currentSolution = encodingGenerator.get();
+        currentSolution = encodingGenerator.get();
         double currentEnergy = energy.applyAsDouble(currentSolution);
 
-        E bestSolution = currentSolution;
+        bestSolution = currentSolution;
         double bestEnergy = currentEnergy;
 
         double temperature = INITIAL_TEMPERATURE;
 
         while (!stoppingCondition.searchMustStop()) {
+// Generate a neighboring solution (mutation)
+            E neighbor = currentSolution.mutate();
 
-            // Propose a neighbour
-            E neighbour = currentSolution.mutate();
+            // Evaluate the energy of the neighboring solution
+            double neighborEnergy = energy.minimise(neighbor);
+
+            // Calculate the energy difference (ΔE)
+            double deltaE = neighborEnergy - bestEnergy;
+
+            // If the neighbor has lower energy, or if a worse solution is accepted based on temperature
+            if (deltaE < 0 || random.nextDouble() < Math.exp(-deltaE / temperature)) {
+                currentSolution = neighbor;
+                if (neighborEnergy <= bestEnergy) {  // Minimize energy
+                    bestSolution = neighbor;
+                    bestEnergy = neighborEnergy;
+                }
+            }
+
+            // Reduce the temperature according to the cooling rate
+            temperature *= coolingRate;
+
+            // Notify the stopping condition about the fitness evaluation
             stoppingCondition.notifyFitnessEvaluation();
-            double neighbourEnergy = energy.applyAsDouble(neighbour);
-
-            // Accept if better OR with Metropolis probability
-            boolean accept =
-                    neighbourEnergy < currentEnergy ||
-                            random.nextDouble() < Math.exp((currentEnergy - neighbourEnergy) / temperature);
-
-            if (accept) {
-                currentSolution = neighbour;
-                currentEnergy = neighbourEnergy;
-            }
-
-            // Elitism: track global best
-            if (currentEnergy < bestEnergy) {
-                bestSolution = currentSolution;
-                bestEnergy = currentEnergy;
-            }
-
-            // Cool down
-            temperature = temperature * COOLING_RATE;
         }
 
+        // Return the best solution found
         return bestSolution;
     }
 
