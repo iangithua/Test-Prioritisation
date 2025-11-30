@@ -103,6 +103,7 @@ public final class SimulatedAnnealing<E extends Encoding<E>> implements SearchAl
 
     @Override
     public StoppingCondition getStoppingCondition() {
-        throw new UnsupportedOperationException("Implement me");
+
+        return stoppingCondition;
     }
 }
