@@ -20,6 +20,7 @@ class SimulatedAnnealingTest {
         public TestOrder get() {
             int[] initial = {0, 1, 2, 3, 4};  // simple sequence for testing
             return new TestOrder(new ShiftToBeginningMutation(new Random()), initial);
+
         }
     }
 
